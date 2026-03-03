@@ -1,14 +1,17 @@
 import { createRouter, createWebHistory } from "vue-router";
-import Home from "./pages/Home.vue";
+import imsRoutes from "@ims/routes";
+
 const routes = [
     {
         path: "/",
-        name: "home",
-        component: Home,
+        redirect: "/ims",
     },
+    ...imsRoutes,
 ];
+
 const router = createRouter({
     history: createWebHistory(),
     routes,
 });
+
 export default router;
