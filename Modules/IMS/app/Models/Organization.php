@@ -10,10 +10,22 @@ class Organization extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     */
-    protected $fillable = [];
+    protected $fillable = [
+        'name',
+        'tin_number',
+        'VAT_reg_number',
+        'VAT_reg_date',
+        'email',
+        'phone',
+        'house_number',
+        'trade_name',
+        'legal_name',
+        'woreda_id',
+        'kebele_id',
+        'locality_id',
+        'tax_center_id',
+        'sector_type',
+    ];
 
     // protected static function newFactory(): OrganizationFactory
     // {
