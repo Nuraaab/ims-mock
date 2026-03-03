@@ -10,12 +10,12 @@
         </div>
 
         <nav class="space-y-2">
-            <button
-                type="button"
+            <RouterLink
+                :to="{ name: 'dashboard' }"
                 class="ui-text flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-medium hover:bg-slate-100/40"
             >
                 Dashboard
-            </button>
+            </RouterLink>
 
             <div class="ui-surface-soft p-2">
                 <button
@@ -34,12 +34,12 @@
                     >
                         Users
                     </button>
-                    <button
-                        type="button"
-                        class="ui-muted w-full rounded-lg px-2 py-1.5 text-left text-sm hover:bg-white/40"
+                    <RouterLink
+                        :to="{ name: 'roles.create' }"
+                        class="ui-muted block w-full rounded-lg px-2 py-1.5 text-left text-sm hover:bg-white/40"
                     >
                         Roles
-                    </button>
+                    </RouterLink>
                 </div>
             </div>
         </nav>
@@ -48,6 +48,7 @@
 
 <script setup>
 import { ref } from "vue";
+import { RouterLink } from "vue-router";
 
 const userMenuOpen = ref(true);
 </script>
