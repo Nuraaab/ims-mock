@@ -17,6 +17,7 @@ class RoleResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'is_protected' => mb_strtolower(trim((string) $this->name)) === 'super owner',
             'permissions' => $this->whenLoaded('permissions', function () {
                 return $this->permissions->map(fn ($permission) => [
                     'id' => $permission->id,

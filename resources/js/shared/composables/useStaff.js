@@ -1,9 +1,9 @@
 import { storeToRefs } from "pinia";
-import { useStaffStore } from "@/shared/users/stores/staffStore";
+import { useStaffStore } from "@/shared/stores/staffStore";
 
 export function useStaff() {
     const store = useStaffStore();
-    const { loading, saving, message, error, validationErrors, lookups, createdStaff } = storeToRefs(store);
+    const { loading, saving, message, error, validationErrors, lookups, staff } = storeToRefs(store);
 
     return {
         loading,
@@ -12,9 +12,12 @@ export function useStaff() {
         error,
         validationErrors,
         lookups,
-        createdStaff,
+        staff,
         fetchLookups: store.fetchLookups,
+        fetchStaff: store.fetchStaff,
         createStaff: store.createStaff,
+        updateStaff: store.updateStaff,
+        deleteStaff: store.deleteStaff,
         resetFeedback: store.resetFeedback,
     };
 }

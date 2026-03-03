@@ -104,6 +104,71 @@ class UserService
         ];
     }
 
+    public function listStaff(User $actor, ?int $organizationId = null)
+    {
+        $resolvedOrganizationId = $this->resolveOrganizationIdForActor($actor, $organizationId);
+
+        return $this->bindingsWithinOrganizationQuery($resolvedOrganizationId)
+            ->with([
+                'user:id,name,email,phone,national_id,created_at',
+                'role:id,name',
+            ])
+            ->orderByDesc('id')
+            ->get();
+    }
+
+    public function updateStaff(User $actor, int $staffUserId, array $payload): array
+    {
+        return DB::transaction(function () use ($actor, $staffUserId, $payload) {
+            $binding = $this->getOrganizationBindingForStaff($actor, $staffUserId);
+            $organizationId = (int) $binding->scope_id;
+
+            $scope = $payload['scope'];
+            $scopeId = $payload['scope_id'] ?? null;
+
+            if ($scope === 'organization') {
+                $scopeId = $scopeId ?? $organizationId;
+            }
+
+            $this->assertScopeBelongsToOrganization($scope, $scopeId, $organizationId);
+
+            $role = AppRole::query()->findOrFail($payload['role_id']);
+            $user = $binding->user;
+
+            $user->name = $payload['name'];
+            $user->email = $payload['email'];
+            $user->phone = $payload['phone'] ?? null;
+            $user->national_id = $payload['national_id'] ?? null;
+            $user->save();
+
+            $binding->role_id = $role->id;
+            $binding->scope = $scope;
+            $binding->scope_id = $scopeId;
+            $binding->include_descendents = (bool) ($payload['include_descendents'] ?? false);
+            $binding->save();
+
+            return [
+                'user' => $user,
+                'binding' => $binding,
+                'role' => $role,
+                'organization_id' => $organizationId,
+            ];
+        });
+    }
+
+    public function deleteStaff(User $actor, int $staffUserId): void
+    {
+        $binding = $this->getOrganizationBindingForStaff($actor, $staffUserId);
+
+        if ((int) $binding->user_id === (int) $actor->id) {
+            throw ValidationException::withMessages([
+                'user' => ['You cannot delete your own account.'],
+            ]);
+        }
+
+        $binding->user()->delete();
+    }
+
     private function resolveOrganizationIdForActor(User $actor, ?int $organizationId = null): int
     {
         $organizationBindings = UserRoleBinding::query()
@@ -203,5 +268,51 @@ class UserService
                 ]);
             }
         }
+    }
+
+    private function getOrganizationBindingForStaff(User $actor, int $staffUserId): UserRoleBinding
+    {
+        $organizationId = $this->resolveOrganizationIdForActor($actor, null);
+
+        $binding = $this->bindingsWithinOrganizationQuery($organizationId)
+            ->with(['user', 'role'])
+            ->where('user_id', $staffUserId)
+            ->orderByDesc('id')
+            ->first();
+
+        if (! $binding) {
+            throw ValidationException::withMessages([
+                'user' => ['Staff user not found in your organization scope.'],
+            ]);
+        }
+
+        return $binding;
+    }
+
+    private function bindingsWithinOrganizationQuery(int $organizationId)
+    {
+        return UserRoleBinding::query()->where(function ($query) use ($organizationId) {
+            $query->where(function ($inner) use ($organizationId) {
+                $inner->where('scope', 'organization')
+                    ->where('scope_id', $organizationId);
+            })->orWhere(function ($inner) use ($organizationId) {
+                $inner->where('scope', 'branch')
+                    ->whereIn('scope_id', Branch::query()
+                        ->where('organization_id', $organizationId)
+                        ->select('id'));
+            })->orWhere(function ($inner) use ($organizationId) {
+                $inner->where('scope', 'warehouse')
+                    ->whereIn('scope_id', Warehouse::query()
+                        ->where('organization_id', $organizationId)
+                        ->select('id'));
+            })->orWhere(function ($inner) use ($organizationId) {
+                $inner->where('scope', 'outlet')
+                    ->whereIn('scope_id', Outlet::query()
+                        ->whereHas('branch', function ($branchQuery) use ($organizationId) {
+                            $branchQuery->where('organization_id', $organizationId);
+                        })
+                        ->select('id'));
+            });
+        });
     }
 }

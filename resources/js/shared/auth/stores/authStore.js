@@ -5,6 +5,7 @@ export const useAuthStore = defineStore("auth", {
     state: () => ({
         user: null,
         token: localStorage.getItem("user_token"),
+        permissions: [],
         registrationLookups: {
             woredas: [],
             kebeles: [],
@@ -56,6 +57,7 @@ export const useAuthStore = defineStore("auth", {
                 const { data } = await authClient.login(payload);
                 this.user = data.user ?? null;
                 this.token = data.token ?? null;
+                this.permissions = data.permissions ?? [];
                 this.message = data.message || "Login successful.";
                 if (this.token) {
                     localStorage.setItem("user_token", this.token);
@@ -76,6 +78,7 @@ export const useAuthStore = defineStore("auth", {
                 const { data } = await authClient.registerOrganization(payload);
                 this.user = data.user ?? null;
                 this.token = data.token ?? null;
+                this.permissions = data.permissions ?? [];
                 this.message = data.message || "Registration successful.";
                 if (this.token) {
                     localStorage.setItem("user_token", this.token);
@@ -89,6 +92,26 @@ export const useAuthStore = defineStore("auth", {
             }
         },
 
+        async fetchMe() {
+            this.loading = true;
+            this.resetFeedback();
+            try {
+                const { data } = await authClient.me();
+                this.user = data.user ?? null;
+                this.permissions = data.permissions ?? [];
+                return data;
+            } catch (error) {
+                this.setErrorState(error, "Failed to load current user.");
+                throw error;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        hasPermission(permissionKey) {
+            return this.permissions.includes(permissionKey);
+        },
+
         async logout() {
             this.loading = true;
             this.resetFeedback();
@@ -96,6 +119,7 @@ export const useAuthStore = defineStore("auth", {
                 await authClient.logout();
                 this.user = null;
                 this.token = null;
+                this.permissions = [];
                 this.message = "Logged out successfully.";
                 localStorage.removeItem("user_token");
             } catch (error) {

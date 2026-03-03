@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\AppPermission;
+use App\Models\AppRole;
 use Illuminate\Database\Seeder;
 
 class UserPermissionSeeder extends Seeder
@@ -14,11 +15,28 @@ class UserPermissionSeeder extends Seeder
             ['key' => 'users.create', 'value' => 'Create users'],
             ['key' => 'users.update', 'value' => 'Update users'],
             ['key' => 'users.delete', 'value' => 'Delete users'],
+
             ['key' => 'roles.view', 'value' => 'View roles'],
             ['key' => 'roles.create', 'value' => 'Create roles'],
             ['key' => 'roles.update', 'value' => 'Update roles'],
             ['key' => 'roles.delete', 'value' => 'Delete roles'],
+
             ['key' => 'permissions.view', 'value' => 'View permissions'],
+
+            ['key' => 'branches.view', 'value' => 'View branches'],
+            ['key' => 'branches.create', 'value' => 'Create branches'],
+            ['key' => 'branches.update', 'value' => 'Update branches'],
+            ['key' => 'branches.delete', 'value' => 'Delete branches'],
+
+            ['key' => 'warehouses.view', 'value' => 'View warehouses'],
+            ['key' => 'warehouses.create', 'value' => 'Create warehouses'],
+            ['key' => 'warehouses.update', 'value' => 'Update warehouses'],
+            ['key' => 'warehouses.delete', 'value' => 'Delete warehouses'],
+
+            ['key' => 'outlets.view', 'value' => 'View outlets'],
+            ['key' => 'outlets.create', 'value' => 'Create outlets'],
+            ['key' => 'outlets.update', 'value' => 'Update outlets'],
+            ['key' => 'outlets.delete', 'value' => 'Delete outlets'],
         ];
 
         foreach ($permissions as $permission) {
@@ -27,5 +45,10 @@ class UserPermissionSeeder extends Seeder
                 ['value' => $permission['value']]
             );
         }
+
+        $superOwnerRole = AppRole::firstOrCreate(['name' => 'Super Owner']);
+        $superOwnerRole->permissions()->sync(
+            AppPermission::query()->pluck('id')->all()
+        );
     }
 }

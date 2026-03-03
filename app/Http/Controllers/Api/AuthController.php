@@ -25,6 +25,7 @@ class AuthController extends Controller
             'message' => 'Organization registered successfully.',
             'token' => $result['token'],
             'user' => new UserResource($result['user']),
+            'permissions' => $this->authService->getUserPermissionKeys($result['user']),
             'organization' => new OrganizationResource($result['organization']),
         ], 201);
     }
@@ -42,6 +43,7 @@ class AuthController extends Controller
             'message' => 'Login successful.',
             'token' => $result['token'],
             'user' => new UserResource($result['user']),
+            'permissions' => $this->authService->getUserPermissionKeys($result['user']),
         ]);
     }
 
@@ -58,6 +60,7 @@ class AuthController extends Controller
     {
         return response()->json([
             'user' => new UserResource($request->user()),
+            'permissions' => $this->authService->getUserPermissionKeys($request->user()),
         ]);
     }
 }
