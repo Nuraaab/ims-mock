@@ -40,7 +40,9 @@
             <article class="ui-card p-5">
                 <h3 class="ui-text text-base font-semibold">Quick Actions</h3>
                 <div class="mt-4 space-y-2">
-                    <button type="button" class="ui-btn-primary w-full">Create User</button>
+                    <RouterLink :to="{ name: 'users.index' }" class="ui-btn-primary block w-full text-center">
+                        Create User
+                    </RouterLink>
                     <RouterLink :to="{ name: 'roles.create' }" class="ui-btn-primary block w-full text-center">
                         Create Role
                     </RouterLink>

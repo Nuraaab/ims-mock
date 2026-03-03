@@ -4,6 +4,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\RoleController;
+
+use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\PermissionController;
 
 Route::get('/user', function (Request $request) {
@@ -23,6 +25,11 @@ Route::prefix('auth')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/roles', [RoleController::class, 'CreateRole']);
+
+    Route::post('/users/staff', [UserController::class, 'createStaff']);
+    Route::get('/users/staff/lookups', [UserController::class, 'staffLookups']);
+
     Route::get('/roles', [RoleController::class, 'GetRoles']);
     Route::get('/permissions', [PermissionController::class, 'index']);
+
 });

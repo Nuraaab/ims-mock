@@ -3,6 +3,7 @@ import DashboardPage from "@/shared/pages/Dashboard.vue";
 import LoginPage from "@/shared/pages/auth/Login.vue";
 import RegisterPage from "@/shared/pages/auth/Register.vue";
 import RolePage from "@/shared/pages/auth/Role.vue";
+import UsersPage from "@/shared/pages/users/Users.vue";
 
 const sharedRoutes = [
     {
@@ -33,6 +34,12 @@ const sharedRoutes = [
         path: "/dashboard/roles",
         name: "roles.create",
         component: RolePage,
+        meta: { requiresAuth: true },
+    },
+    {
+        path: "/dashboard/users",
+        name: "users.index",
+        component: UsersPage,
         meta: { requiresAuth: true },
     },
 ];

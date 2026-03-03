@@ -127,4 +127,9 @@
     [data-theme="dark"] .ui-alert-error {
         @apply border-red-900 bg-red-950/40 text-red-300;
     }
+
+    [data-theme="dark"] .ui-input,
+    [data-theme="dark"] .ui-select {
+        @apply bg-slate-900 text-slate-100;
+    }
 }
