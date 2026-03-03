@@ -2,6 +2,7 @@
 
 namespace App\Services\Auth;
 
+use App\Models\AppPermission;
 use App\Models\AppRole;
 use App\Models\Kebele;
 use App\Models\Locality;
@@ -17,6 +18,21 @@ use Modules\IMS\Models\TaxCenter;
 
 class AuthService
 {
+    public function getUserPermissionKeys(User $user): array
+    {
+        return UserRoleBinding::query()
+            ->where('user_id', $user->id)
+            ->with('role.permissions:id,key')
+            ->get()
+            ->pluck('role.permissions')
+            ->flatten(1)
+            ->pluck('key')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     public function getRegistrationLookups(): array
     {
         return [
@@ -74,6 +90,9 @@ class AuthService
             ]);
 
             $superOwnerRole = AppRole::firstOrCreate(['name' => 'Super Owner']);
+            $superOwnerRole->permissions()->sync(
+                AppPermission::query()->pluck('id')->all()
+            );
 
             UserRoleBinding::firstOrCreate(
                 [

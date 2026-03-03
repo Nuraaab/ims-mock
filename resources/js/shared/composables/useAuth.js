@@ -6,6 +6,7 @@ export function useAuth() {
     const {
         user,
         token,
+        permissions,
         registrationLookups,
         loading,
         message,
@@ -16,12 +17,15 @@ export function useAuth() {
     return {
         user,
         token,
+        permissions,
         registrationLookups,
         loading,
         message,
         error,
         validationErrors,
         login: store.login,
+        fetchMe: store.fetchMe,
+        hasPermission: store.hasPermission,
         fetchRegistrationLookups: store.fetchRegistrationLookups,
         registerOrganization: store.registerOrganization,
         logout: store.logout,

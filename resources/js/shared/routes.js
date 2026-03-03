@@ -2,8 +2,11 @@ import HomePage from "@/shared/pages/Home.vue";
 import DashboardPage from "@/shared/pages/Dashboard.vue";
 import LoginPage from "@/shared/pages/auth/Login.vue";
 import RegisterPage from "@/shared/pages/auth/Register.vue";
-import RolePage from "@/shared/pages/auth/Role.vue";
-import UsersPage from "@/shared/pages/users/Users.vue";
+import RolePage from "@/shared/pages/role/RolesPage.vue";
+import UsersPage from "@/shared/pages/user/UsersPage.vue";
+import BranchesPage from "@/shared/pages/branch/BranchesPage.vue";
+import WarehousesPage from "@/shared/pages/warehouse/WarehousesPage.vue";
+import OutletsPage from "@/shared/pages/outlet/OutletsPage.vue";
 
 const sharedRoutes = [
     {
@@ -42,6 +45,9 @@ const sharedRoutes = [
         component: UsersPage,
         meta: { requiresAuth: true },
     },
+    { path: "/dashboard/branches", name: "branches.index.page", component: BranchesPage, meta: { requiresAuth: true } },
+    { path: "/dashboard/warehouses", name: "warehouses.index.page", component: WarehousesPage, meta: { requiresAuth: true } },
+    { path: "/dashboard/outlets", name: "outlets.index.page", component: OutletsPage, meta: { requiresAuth: true } },
 ];
 
 export default sharedRoutes;
