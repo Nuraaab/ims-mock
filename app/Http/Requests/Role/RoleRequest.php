@@ -23,6 +23,8 @@ class RoleRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255', 'unique:roles'],
+            'permission_ids' => ['sometimes', 'array'],
+            'permission_ids.*' => ['integer', 'exists:permissions,id'],
         ];
     }
 }
