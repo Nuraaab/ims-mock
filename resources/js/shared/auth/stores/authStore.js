@@ -1,99 +1,109 @@
-import { reactive } from "vue";
+import { defineStore } from "pinia";
 import { authClient } from "@/shared/auth/clients/authClient";
 
-const state = reactive({
-    user: null,
-    token: localStorage.getItem("user_token"),
-    registrationLookups: {
-        woredas: [],
-        kebeles: [],
-        localities: [],
-        tax_centers: [],
+export const useAuthStore = defineStore("auth", {
+    state: () => ({
+        user: null,
+        token: localStorage.getItem("user_token"),
+        registrationLookups: {
+            woredas: [],
+            kebeles: [],
+            localities: [],
+            tax_centers: [],
+        },
+        loading: false,
+        message: null,
+        error: null,
+        validationErrors: {},
+    }),
+
+    actions: {
+        resetFeedback() {
+            this.message = null;
+            this.error = null;
+            this.validationErrors = {};
+        },
+
+        setErrorState(error, fallbackMessage) {
+            this.error = error?.response?.data?.message || fallbackMessage;
+            this.validationErrors = error?.response?.data?.errors || {};
+        },
+
+        async fetchRegistrationLookups() {
+            this.loading = true;
+            this.resetFeedback();
+            try {
+                const { data } = await authClient.registrationLookups();
+                this.registrationLookups = {
+                    woredas: data.woredas ?? [],
+                    kebeles: data.kebeles ?? [],
+                    localities: data.localities ?? [],
+                    tax_centers: data.tax_centers ?? [],
+                };
+                return this.registrationLookups;
+            } catch (error) {
+                this.setErrorState(error, "Failed to load registration options.");
+                throw error;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async login(payload) {
+            this.loading = true;
+            this.resetFeedback();
+            try {
+                const { data } = await authClient.login(payload);
+                this.user = data.user ?? null;
+                this.token = data.token ?? null;
+                this.message = data.message || "Login successful.";
+                if (this.token) {
+                    localStorage.setItem("user_token", this.token);
+                }
+                return data;
+            } catch (error) {
+                this.setErrorState(error, "Login failed.");
+                throw error;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async registerOrganization(payload) {
+            this.loading = true;
+            this.resetFeedback();
+            try {
+                const { data } = await authClient.registerOrganization(payload);
+                this.user = data.user ?? null;
+                this.token = data.token ?? null;
+                this.message = data.message || "Registration successful.";
+                if (this.token) {
+                    localStorage.setItem("user_token", this.token);
+                }
+                return data;
+            } catch (error) {
+                this.setErrorState(error, "Registration failed.");
+                throw error;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async logout() {
+            this.loading = true;
+            this.resetFeedback();
+            try {
+                await authClient.logout();
+                this.user = null;
+                this.token = null;
+                this.message = "Logged out successfully.";
+                localStorage.removeItem("user_token");
+            } catch (error) {
+                this.setErrorState(error, "Logout failed.");
+                throw error;
+            } finally {
+                this.loading = false;
+            }
+        },
     },
-    loading: false,
-    error: null,
 });
-
-async function fetchRegistrationLookups() {
-    state.loading = true;
-    state.error = null;
-    try {
-        const { data } = await authClient.registrationLookups();
-        state.registrationLookups = {
-            woredas: data.woredas ?? [],
-            kebeles: data.kebeles ?? [],
-            localities: data.localities ?? [],
-            tax_centers: data.tax_centers ?? [],
-        };
-        return state.registrationLookups;
-    } catch (error) {
-        state.error = error?.response?.data?.message || "Failed to load registration options.";
-        throw error;
-    } finally {
-        state.loading = false;
-    }
-}
-
-async function login(payload) {
-    state.loading = true;
-    state.error = null;
-    try {
-        const { data } = await authClient.login(payload);
-        state.user = data.user ?? null;
-        state.token = data.token ?? null;
-        if (state.token) {
-            localStorage.setItem("user_token", state.token);
-        }
-        return data;
-    } catch (error) {
-        state.error = error?.response?.data?.message || "Login failed.";
-        throw error;
-    } finally {
-        state.loading = false;
-    }
-}
-
-async function registerOrganization(payload) {
-    state.loading = true;
-    state.error = null;
-    try {
-        const { data } = await authClient.registerOrganization(payload);
-        state.user = data.user ?? null;
-        state.token = data.token ?? null;
-        if (state.token) {
-            localStorage.setItem("user_token", state.token);
-        }
-        return data;
-    } catch (error) {
-        state.error = error?.response?.data?.message || "Registration failed.";
-        throw error;
-    } finally {
-        state.loading = false;
-    }
-}
-
-async function logout() {
-    state.loading = true;
-    state.error = null;
-    try {
-        await authClient.logout();
-        state.user = null;
-        state.token = null;
-        localStorage.removeItem("user_token");
-    } catch (error) {
-        state.error = error?.response?.data?.message || "Logout failed.";
-        throw error;
-    } finally {
-        state.loading = false;
-    }
-}
-
-export function useAuthStore() {
-    return {
-        state,
-        login,
-        fetchRegistrationLookups,
-        registerOrganization,
-        logout,
-    };
-}
