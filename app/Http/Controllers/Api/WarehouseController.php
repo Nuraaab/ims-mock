@@ -34,8 +34,14 @@ class WarehouseController extends Controller
 
     public function store(CreateWarehouseRequest $request): JsonResponse
     {
-        $organizationId = $request->integer('organization_id') ?: null;
-        $this->permissionService->authorize($request->user(), 'warehouses.create', $organizationId);
+        $branchId = $request->integer('branch_id') ?: null;
+
+        if ($branchId !== null) {
+            $this->permissionService->authorize($request->user(), 'warehouses.create', null, 'branch', $branchId);
+        } else {
+            $organizationId = $request->integer('organization_id') ?: null;
+            $this->permissionService->authorize($request->user(), 'warehouses.create', $organizationId);
+        }
 
         $warehouse = $this->warehouseService->store($request->user(), $request->validated());
 
@@ -47,8 +53,8 @@ class WarehouseController extends Controller
 
     public function show(Request $request, int $warehouse): JsonResponse
     {
+        $this->permissionService->authorize($request->user(), 'warehouses.view', null, 'warehouse', $warehouse);
         $record = $this->warehouseService->show($request->user(), $warehouse);
-        $this->permissionService->authorize($request->user(), 'warehouses.view', (int) $record->organization_id);
 
         return response()->json([
             'warehouse' => new WarehouseResource($record),
@@ -57,8 +63,12 @@ class WarehouseController extends Controller
 
     public function update(UpdateWarehouseRequest $request, int $warehouse): JsonResponse
     {
-        $existing = $this->warehouseService->show($request->user(), $warehouse);
-        $this->permissionService->authorize($request->user(), 'warehouses.update', (int) $existing->organization_id);
+        $this->permissionService->authorize($request->user(), 'warehouses.update', null, 'warehouse', $warehouse);
+
+        if ($request->filled('branch_id')) {
+            $targetBranchId = (int) $request->input('branch_id');
+            $this->permissionService->authorize($request->user(), 'warehouses.update', null, 'branch', $targetBranchId);
+        }
 
         $record = $this->warehouseService->update($request->user(), $warehouse, $request->validated());
 
@@ -70,8 +80,7 @@ class WarehouseController extends Controller
 
     public function destroy(Request $request, int $warehouse): JsonResponse
     {
-        $existing = $this->warehouseService->show($request->user(), $warehouse);
-        $this->permissionService->authorize($request->user(), 'warehouses.delete', (int) $existing->organization_id);
+        $this->permissionService->authorize($request->user(), 'warehouses.delete', null, 'warehouse', $warehouse);
 
         $this->warehouseService->destroy($request->user(), $warehouse);
 

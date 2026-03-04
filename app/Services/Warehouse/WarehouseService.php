@@ -3,7 +3,6 @@
 namespace App\Services\Warehouse;
 
 use App\Models\User;
-use App\Models\UserRoleBinding;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
 use Modules\IMS\Models\Branch;
@@ -13,21 +12,34 @@ class WarehouseService
 {
     public function index(User $actor, ?int $organizationId = null, int $perPage = 15): LengthAwarePaginator
     {
-        $resolvedOrganizationId = $this->resolveOrganizationIdForActor($actor, $organizationId);
+        $query = Warehouse::query();
 
-        return Warehouse::query()
-            ->where('organization_id', $resolvedOrganizationId)
+        if ($organizationId !== null) {
+            $query->where('organization_id', $organizationId);
+        }
+
+        $accessibleWarehouseIds = require_scope_ids($actor, 'warehouses.view', 'warehouse');
+
+        return $query
+            ->whereIn('id', $accessibleWarehouseIds)
             ->orderByDesc('id')
             ->paginate($perPage);
     }
 
     public function store(User $actor, array $payload): Warehouse
     {
-        $organizationId = $this->resolveOrganizationIdForActor($actor, $payload['organization_id'] ?? null);
         $branchId = $payload['branch_id'] ?? null;
+        $organizationId = $payload['organization_id'] ?? null;
 
         if ($branchId !== null) {
-            $this->assertBranchBelongsToOrganization((int) $branchId, $organizationId);
+            $branch = Branch::query()->findOrFail((int) $branchId);
+            $organizationId = (int) $branch->organization_id;
+        } elseif ($organizationId === null) {
+            $organizationId = required_payload_int(
+                $payload,
+                'organization_id',
+                'organization_id is required when branch_id is not provided.'
+            );
         }
 
         return Warehouse::create([
@@ -42,17 +54,13 @@ class WarehouseService
 
     public function show(User $actor, int $warehouseId): Warehouse
     {
-        $warehouse = Warehouse::query()->findOrFail($warehouseId);
-        $this->assertActorCanAccessOrganization($actor, (int) $warehouse->organization_id);
-
-        return $warehouse;
+        return Warehouse::query()->findOrFail($warehouseId);
     }
 
     public function update(User $actor, int $warehouseId, array $payload): Warehouse
     {
         $warehouse = Warehouse::query()->findOrFail($warehouseId);
         $organizationId = (int) $warehouse->organization_id;
-        $this->assertActorCanAccessOrganization($actor, $organizationId);
 
         if (array_key_exists('branch_id', $payload)) {
             if ($payload['branch_id'] !== null) {
@@ -81,55 +89,7 @@ class WarehouseService
     public function destroy(User $actor, int $warehouseId): void
     {
         $warehouse = Warehouse::query()->findOrFail($warehouseId);
-        $this->assertActorCanAccessOrganization($actor, (int) $warehouse->organization_id);
         $warehouse->delete();
-    }
-
-    private function resolveOrganizationIdForActor(User $actor, ?int $organizationId = null): int
-    {
-        $organizationBindings = UserRoleBinding::query()
-            ->where('user_id', $actor->id)
-            ->where('scope', 'organization')
-            ->whereNotNull('scope_id');
-
-        if ($organizationId !== null) {
-            $hasAccess = (clone $organizationBindings)
-                ->where('scope_id', $organizationId)
-                ->exists();
-
-            if (! $hasAccess) {
-                throw ValidationException::withMessages([
-                    'organization_id' => ['You do not have access to the selected organization.'],
-                ]);
-            }
-
-            return $organizationId;
-        }
-
-        $resolved = (clone $organizationBindings)->value('scope_id');
-
-        if (! $resolved) {
-            throw ValidationException::withMessages([
-                'organization_id' => ['No organization scope found for the current user.'],
-            ]);
-        }
-
-        return (int) $resolved;
-    }
-
-    private function assertActorCanAccessOrganization(User $actor, int $organizationId): void
-    {
-        $hasAccess = UserRoleBinding::query()
-            ->where('user_id', $actor->id)
-            ->where('scope', 'organization')
-            ->where('scope_id', $organizationId)
-            ->exists();
-
-        if (! $hasAccess) {
-            throw ValidationException::withMessages([
-                'organization_id' => ['You do not have access to this organization resource.'],
-            ]);
-        }
     }
 
     private function assertBranchBelongsToOrganization(int $branchId, int $organizationId): void

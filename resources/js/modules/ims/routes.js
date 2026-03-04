@@ -2,6 +2,7 @@ import ItemCategoriesPage from "@ims/pages/ItemCategoriesPage.vue";
 import ProductGroupsPage from "@ims/pages/ProductGroupsPage.vue";
 import MeasurementsPage from "@ims/pages/MeasurementsPage.vue";
 import ItemsPage from "@ims/pages/ItemsPage.vue";
+import ProductsPage from "@ims/pages/ProductsPage.vue";
 
 const imsRoutes = [
     {
@@ -26,6 +27,9 @@ const imsRoutes = [
         path: "/dashboard/ims/items",
         name: "ims.items.index",
         component: ItemsPage,
+        path: "/dashboard/ims/products",
+        name: "ims.products.index",
+        component: ProductsPage,
         meta: { requiresAuth: true },
     },
 ];

@@ -8,7 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\IMS\Http\Requests\StoreItemCategoryRequest;
 use Modules\IMS\Http\Requests\UpdateItemCategoryRequest;
-use Modules\IMS\Services\ItemCategoryService;
+use Modules\IMS\Services\Item\ItemCategoryService;
 use Modules\IMS\Transformers\ItemCategoryResource;
 
 class ItemCategoryController extends Controller

@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\IMS\Http\Controllers\IMSController;
 use Modules\IMS\Http\Controllers\ProductGroupController;
+use Modules\IMS\Http\Controllers\ProductController;
 use Modules\IMS\Http\Controllers\ItemCategoryController;
 use Modules\IMS\Http\Controllers\ItemController;
 use Modules\IMS\Http\Controllers\MeasurmentController;
@@ -17,4 +18,7 @@ Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
     Route::apiResource('product-groups', ProductGroupController::class)
         ->parameters(['product-groups' => 'productGroup'])
         ->names('product-groups');
+    Route::apiResource('products', ProductController::class)
+        ->parameters(['products' => 'product'])
+        ->names('products');
 });

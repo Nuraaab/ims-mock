@@ -36,7 +36,7 @@ class OutletController extends Controller
     public function store(CreateOutletRequest $request): JsonResponse
     {
         $branch = Branch::query()->findOrFail((int) $request->input('branch_id'));
-        $this->permissionService->authorize($request->user(), 'outlets.create', (int) $branch->organization_id);
+        $this->permissionService->authorize($request->user(), 'outlets.create', null, 'branch', (int) $branch->id);
 
         $outlet = $this->outletService->store($request->user(), $request->validated());
 
@@ -48,9 +48,8 @@ class OutletController extends Controller
 
     public function show(Request $request, int $outlet): JsonResponse
     {
+        $this->permissionService->authorize($request->user(), 'outlets.view', null, 'outlet', $outlet);
         $record = $this->outletService->show($request->user(), $outlet);
-        $organizationId = (int) Branch::query()->whereKey($record->branch_id)->value('organization_id');
-        $this->permissionService->authorize($request->user(), 'outlets.view', $organizationId);
 
         return response()->json([
             'outlet' => new OutletResource($record),
@@ -59,9 +58,12 @@ class OutletController extends Controller
 
     public function update(UpdateOutletRequest $request, int $outlet): JsonResponse
     {
-        $existing = $this->outletService->show($request->user(), $outlet);
-        $existingOrganizationId = (int) Branch::query()->whereKey($existing->branch_id)->value('organization_id');
-        $this->permissionService->authorize($request->user(), 'outlets.update', $existingOrganizationId);
+        $this->permissionService->authorize($request->user(), 'outlets.update', null, 'outlet', $outlet);
+
+        if ($request->filled('branch_id')) {
+            $targetBranchId = (int) $request->input('branch_id');
+            $this->permissionService->authorize($request->user(), 'outlets.update', null, 'branch', $targetBranchId);
+        }
 
         $record = $this->outletService->update($request->user(), $outlet, $request->validated());
 
@@ -73,9 +75,7 @@ class OutletController extends Controller
 
     public function destroy(Request $request, int $outlet): JsonResponse
     {
-        $existing = $this->outletService->show($request->user(), $outlet);
-        $organizationId = (int) Branch::query()->whereKey($existing->branch_id)->value('organization_id');
-        $this->permissionService->authorize($request->user(), 'outlets.delete', $organizationId);
+        $this->permissionService->authorize($request->user(), 'outlets.delete', null, 'outlet', $outlet);
 
         $this->outletService->destroy($request->user(), $outlet);
 

@@ -6,6 +6,7 @@ use App\Services\Auth\PermissionService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Modules\IMS\Models\ProductGroup;
 use Modules\IMS\Services\ProductGroup\ProductGroupService;
 
 class ProductGroupController extends Controller
@@ -37,8 +38,14 @@ class ProductGroupController extends Controller
             'description' => ['nullable', 'string'],
         ]);
 
-        $organizationId = $request->integer('organization_id') ?: null;
-        $this->permissionService->authorize($request->user(), 'product-groups.create', $organizationId);
+        $branchId = $request->integer('branch_id') ?: null;
+
+        if ($branchId !== null) {
+            $this->permissionService->authorize($request->user(), 'product-groups.create', null, 'branch', $branchId);
+        } else {
+            $organizationId = $request->integer('organization_id') ?: null;
+            $this->permissionService->authorize($request->user(), 'product-groups.create', $organizationId);
+        }
 
         $productGroup = $this->productGroupService->store($request->user(), $validated);
 
@@ -50,8 +57,13 @@ class ProductGroupController extends Controller
 
     public function show(Request $request, int $productGroup): JsonResponse
     {
+        $record = ProductGroup::query()->findOrFail($productGroup);
+        if ($record->branch_id) {
+            $this->permissionService->authorize($request->user(), 'product-groups.view', null, 'branch', (int) $record->branch_id);
+        } else {
+            $this->permissionService->authorize($request->user(), 'product-groups.view', (int) $record->organization_id);
+        }
         $record = $this->productGroupService->show($request->user(), $productGroup);
-        $this->permissionService->authorize($request->user(), 'product-groups.view', (int) $record->organization_id);
 
         return response()->json([
             'product_group' => $record,
@@ -66,8 +78,16 @@ class ProductGroupController extends Controller
             'description' => ['sometimes', 'nullable', 'string'],
         ]);
 
-        $existing = $this->productGroupService->show($request->user(), $productGroup);
-        $this->permissionService->authorize($request->user(), 'product-groups.update', (int) $existing->organization_id);
+        $existing = ProductGroup::query()->findOrFail($productGroup);
+        if ($existing->branch_id) {
+            $this->permissionService->authorize($request->user(), 'product-groups.update', null, 'branch', (int) $existing->branch_id);
+        } else {
+            $this->permissionService->authorize($request->user(), 'product-groups.update', (int) $existing->organization_id);
+        }
+
+        if ($request->filled('branch_id')) {
+            $this->permissionService->authorize($request->user(), 'product-groups.update', null, 'branch', (int) $request->input('branch_id'));
+        }
 
         $record = $this->productGroupService->update($request->user(), $productGroup, $validated);
 
@@ -79,8 +99,12 @@ class ProductGroupController extends Controller
 
     public function destroy(Request $request, int $productGroup): JsonResponse
     {
-        $existing = $this->productGroupService->show($request->user(), $productGroup);
-        $this->permissionService->authorize($request->user(), 'product-groups.delete', (int) $existing->organization_id);
+        $existing = ProductGroup::query()->findOrFail($productGroup);
+        if ($existing->branch_id) {
+            $this->permissionService->authorize($request->user(), 'product-groups.delete', null, 'branch', (int) $existing->branch_id);
+        } else {
+            $this->permissionService->authorize($request->user(), 'product-groups.delete', (int) $existing->organization_id);
+        }
 
         $this->productGroupService->destroy($request->user(), $productGroup);
 
