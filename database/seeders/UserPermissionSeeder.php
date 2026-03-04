@@ -37,6 +37,11 @@ class UserPermissionSeeder extends Seeder
             ['key' => 'outlets.create', 'value' => 'Create outlets'],
             ['key' => 'outlets.update', 'value' => 'Update outlets'],
             ['key' => 'outlets.delete', 'value' => 'Delete outlets'],
+
+            ['key' => 'product-groups.view', 'value' => 'View product groups'],
+            ['key' => 'product-groups.create', 'value' => 'Create product groups'],
+            ['key' => 'product-groups.update', 'value' => 'Update product groups'],
+            ['key' => 'product-groups.delete', 'value' => 'Delete product groups'],
         ];
 
         foreach ($permissions as $permission) {
