@@ -108,6 +108,14 @@
                                 Item Category
                             </RouterLink>
                             <RouterLink
+                                v-if="canViewItems"
+                                :to="{ name: 'ims.items.index' }"
+                                class="block w-full rounded-lg px-2.5 py-1.5 text-left text-sm transition"
+                                :class="linkClass(['ims.items.index'])"
+                            >
+                                Item
+                            </RouterLink>
+                            <RouterLink
                                 v-if="canViewProductGroups"
                                 :to="{ name: 'ims.product-groups.index' }"
                                 class="block w-full rounded-lg px-2.5 py-1.5 text-left text-sm transition"
@@ -150,13 +158,14 @@ const canViewBranches = computed(() => hasPermission("branches.view"));
 const canViewWarehouses = computed(() => hasPermission("warehouses.view"));
 const canViewOutlets = computed(() => hasPermission("outlets.view"));
 const canViewItemCategories = computed(() => hasPermission("item_categories.view"));
+const canViewItems = computed(() => hasPermission("items.view"));
 const canViewProductGroups = computed(() => hasPermission("product-groups.view"));
 const canViewMeasurements = computed(() => hasPermission("measurements.view"));
 
 const showUserManagement = computed(() => canViewUsers.value || canViewRoles.value);
 const showBranchManagement = computed(() => canViewBranches.value || canViewWarehouses.value || canViewOutlets.value);
-const showImsManagement = computed(() => canViewItemCategories.value || canViewProductGroups.value || canViewMeasurements.value);
-const showItemManagement = computed(() => canViewItemCategories.value || canViewProductGroups.value || canViewMeasurements.value);
+const showImsManagement = computed(() => canViewItemCategories.value || canViewItems.value || canViewProductGroups.value || canViewMeasurements.value);
+const showItemManagement = computed(() => canViewItemCategories.value || canViewItems.value || canViewProductGroups.value || canViewMeasurements.value);
 
 const sidebarStyle = computed(() => ({
     borderColor: "var(--ui-border)",
