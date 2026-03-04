@@ -173,8 +173,8 @@ const canViewProducts = computed(() => hasPermission("products.view"));
 
 const showUserManagement = computed(() => canViewUsers.value || canViewRoles.value);
 const showBranchManagement = computed(() => canViewBranches.value || canViewWarehouses.value || canViewOutlets.value);
-const showImsManagement = computed(() => canViewItemCategories.value || canViewProductGroups.value || canViewMeasurements.value || canViewProducts.value);
-const showItemManagement = computed(() => canViewItemCategories.value || canViewProductGroups.value || canViewMeasurements.value || canViewProducts.value);
+const showImsManagement = computed(() => canViewItemCategories.value || canViewItems.value || canViewProductGroups.value || canViewMeasurements.value || canViewProducts.value);
+const showItemManagement = computed(() => canViewItemCategories.value || canViewItems.value || canViewProductGroups.value || canViewMeasurements.value || canViewProducts.value);
 
 const sidebarStyle = computed(() => ({
     borderColor: "var(--ui-border)",
