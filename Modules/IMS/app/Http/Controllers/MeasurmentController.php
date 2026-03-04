@@ -2,55 +2,94 @@
 
 namespace Modules\IMS\Http\Controllers;
 
+use App\Services\Auth\PermissionService;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Modules\IMS\Services\Measurment\MeasurmentService;
 
 class MeasurmentController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function __construct(
+        private readonly MeasurmentService $measurmentService,
+        private readonly PermissionService $permissionService
+    )
     {
-        return view('ims::index');
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function index(Request $request): JsonResponse
     {
-        return view('ims::create');
+        $this->permissionService->authorize($request->user(), 'measurements.view');
+
+        $perPage = max(1, min(100, (int) $request->integer('per_page', 15)));
+        $measurements = $this->measurmentService->paginate($perPage);
+
+        return response()->json([
+            'measurements' => $measurements->items(),
+            'meta' => [
+                'current_page' => $measurements->currentPage(),
+                'last_page' => $measurements->lastPage(),
+                'per_page' => $measurements->perPage(),
+                'total' => $measurements->total(),
+            ],
+        ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request) {}
-
-    /**
-     * Show the specified resource.
-     */
-    public function show($id)
+    public function store(Request $request): JsonResponse
     {
-        return view('ims::show');
+        $this->permissionService->authorize($request->user(), 'measurements.create');
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255', 'unique:measurements,name'],
+            'name_plural' => ['nullable', 'string', 'max:255'],
+            'symbol' => ['nullable', 'string', 'max:50', 'unique:measurements,symbol'],
+        ]);
+
+        $measurement = $this->measurmentService->create($validated);
+
+        return response()->json([
+            'message' => 'Measurement created successfully.',
+            'measurement' => $measurement,
+        ], 201);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
+    public function show(Request $request, int $measurement): JsonResponse
     {
-        return view('ims::edit');
+        $this->permissionService->authorize($request->user(), 'measurements.view');
+        $record = $this->measurmentService->find($measurement);
+
+        return response()->json([
+            'measurement' => $record,
+        ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $id) {}
+    public function update(Request $request, int $measurement): JsonResponse
+    {
+        $this->permissionService->authorize($request->user(), 'measurements.update');
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id) {}
+        $validated = $request->validate([
+            'name' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('measurements', 'name')->ignore($measurement)],
+            'name_plural' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'symbol' => ['sometimes', 'nullable', 'string', 'max:50', Rule::unique('measurements', 'symbol')->ignore($measurement)],
+        ]);
+
+        $record = $this->measurmentService->update($measurement, $validated);
+
+        return response()->json([
+            'message' => 'Measurement updated successfully.',
+            'measurement' => $record,
+        ]);
+    }
+
+    public function destroy(Request $request, int $measurement): JsonResponse
+    {
+        $this->permissionService->authorize($request->user(), 'measurements.delete');
+
+        $this->measurmentService->delete($measurement);
+
+        return response()->json([
+            'message' => 'Measurement deleted successfully.',
+        ]);
+    }
 }
