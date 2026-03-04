@@ -35,7 +35,6 @@
             </table>
         </section>
 
-        <p v-if="message" class="ui-alert-success">{{ message }}</p>
         <p v-if="error" class="ui-alert-error">{{ error }}</p>
         <ul v-if="errorItems.length" class="mt-2 list-disc pl-5 text-sm text-red-700 dark:text-red-300">
             <li v-for="(item, index) in errorItems" :key="index">{{ item }}</li>
@@ -83,8 +82,10 @@ import AppButton from "@/shared/components/ui/AppButton.vue";
 import AppModal from "@/shared/components/ui/AppModal.vue";
 import TableActions from "@/shared/components/ui/TableActions.vue";
 import { useRoles } from "@/shared/composables/useRoles";
+import { useNotifier } from "@/shared/composables/useNotifier";
 
-const { loading, saving, message, error, validationErrors, roles, permissions, fetchRolesAndPermissions, createRole, updateRole, deleteRole } = useRoles();
+const { loading, saving, error, validationErrors, roles, permissions, fetchRolesAndPermissions, createRole, updateRole, deleteRole } = useRoles();
+const { notifySuccess, notifyError, getErrorMessage, confirmDelete } = useNotifier();
 
 const modalOpen = ref(false);
 const editingId = ref(null);
@@ -132,10 +133,15 @@ async function submit() {
         permission_ids: form.permission_ids,
     };
 
-    if (editingId.value) {
-        await updateRole(editingId.value, payload);
-    } else {
-        await createRole(payload);
+    try {
+        const data = editingId.value
+            ? await updateRole(editingId.value, payload)
+            : await createRole(payload);
+
+        notifySuccess(data?.message || (editingId.value ? "Role updated successfully." : "Role created successfully."));
+    } catch (apiError) {
+        notifyError(getErrorMessage(apiError, "Failed to save role."));
+        return;
     }
 
     form.name = "";
@@ -145,6 +151,17 @@ async function submit() {
 }
 
 async function removeRole(roleId) {
-    await deleteRole(roleId);
+    const confirmed = await confirmDelete({
+        title: "Delete role?",
+        text: "This role will be removed from your organization.",
+    });
+    if (!confirmed) return;
+
+    try {
+        const data = await deleteRole(roleId);
+        notifySuccess(data?.message || "Role deleted successfully.");
+    } catch (apiError) {
+        notifyError(getErrorMessage(apiError, "Failed to delete role."));
+    }
 }
 </script>

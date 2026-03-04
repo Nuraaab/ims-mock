@@ -36,8 +36,6 @@
             </table>
         </section>
 
-        <p v-if="message" class="ui-alert-success">{{ message }}</p>
-
         <AppModal :open="modalOpen" :title="editingUserId ? 'Edit Staff User' : 'Create Staff User'" @close="closeModal">
             <form class="grid grid-cols-1 gap-3 md:grid-cols-2" @submit.prevent="submit">
                 <div>
@@ -119,8 +117,10 @@ import AppButton from "@/shared/components/ui/AppButton.vue";
 import AppModal from "@/shared/components/ui/AppModal.vue";
 import TableActions from "@/shared/components/ui/TableActions.vue";
 import { useStaff } from "@/shared/composables/useStaff";
+import { useNotifier } from "@/shared/composables/useNotifier";
 
-const { loading, saving, lookups, staff, message, error, validationErrors, fetchLookups, fetchStaff, createStaff, updateStaff, deleteStaff, resetFeedback } = useStaff();
+const { loading, saving, lookups, staff, error, validationErrors, fetchLookups, fetchStaff, createStaff, updateStaff, deleteStaff, resetFeedback } = useStaff();
+const { notifySuccess, notifyError, getErrorMessage, confirmDelete } = useNotifier();
 
 const modalOpen = ref(false);
 const editingUserId = ref(null);
@@ -203,9 +203,16 @@ async function submit() {
         delete payload.password_confirmation;
     }
 
-    const data = editingUserId.value
-        ? await updateStaff(editingUserId.value, payload)
-        : await createStaff(payload);
+    let data;
+    try {
+        data = editingUserId.value
+            ? await updateStaff(editingUserId.value, payload)
+            : await createStaff(payload);
+        notifySuccess(data?.message || (editingUserId.value ? "User updated successfully." : "User created successfully."));
+    } catch (apiError) {
+        notifyError(getErrorMessage(apiError, "Failed to save user."));
+        return;
+    }
 
     if (!data?.user) return;
 
@@ -215,7 +222,18 @@ async function submit() {
 }
 
 async function removeStaff(userId) {
-    await deleteStaff(userId, lookups.value.organization_id);
+    const confirmed = await confirmDelete({
+        title: "Delete user?",
+        text: "The selected user will be removed from this organization.",
+    });
+    if (!confirmed) return;
+
+    try {
+        const data = await deleteStaff(userId, lookups.value.organization_id);
+        notifySuccess(data?.message || "User deleted successfully.");
+    } catch (apiError) {
+        notifyError(getErrorMessage(apiError, "Failed to delete user."));
+    }
 }
 
 function resetForm() {
