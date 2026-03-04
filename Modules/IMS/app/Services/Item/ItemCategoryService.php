@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\IMS\Services;
+namespace Modules\IMS\Services\Item;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;

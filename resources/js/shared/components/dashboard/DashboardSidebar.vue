@@ -123,6 +123,14 @@
                             >
                                 Measurement
                             </RouterLink>
+                            <RouterLink
+                                v-if="canViewProducts"
+                                :to="{ name: 'ims.products.index' }"
+                                class="block w-full rounded-lg px-2.5 py-1.5 text-left text-sm transition"
+                                :class="linkClass(['ims.products.index'])"
+                            >
+                                Product
+                            </RouterLink>
                         </div>
                     </div>
                 </div>
@@ -152,11 +160,12 @@ const canViewOutlets = computed(() => hasPermission("outlets.view"));
 const canViewItemCategories = computed(() => hasPermission("item_categories.view"));
 const canViewProductGroups = computed(() => hasPermission("product-groups.view"));
 const canViewMeasurements = computed(() => hasPermission("measurements.view"));
+const canViewProducts = computed(() => hasPermission("products.view"));
 
 const showUserManagement = computed(() => canViewUsers.value || canViewRoles.value);
 const showBranchManagement = computed(() => canViewBranches.value || canViewWarehouses.value || canViewOutlets.value);
-const showImsManagement = computed(() => canViewItemCategories.value || canViewProductGroups.value || canViewMeasurements.value);
-const showItemManagement = computed(() => canViewItemCategories.value || canViewProductGroups.value || canViewMeasurements.value);
+const showImsManagement = computed(() => canViewItemCategories.value || canViewProductGroups.value || canViewMeasurements.value || canViewProducts.value);
+const showItemManagement = computed(() => canViewItemCategories.value || canViewProductGroups.value || canViewMeasurements.value || canViewProducts.value);
 
 const sidebarStyle = computed(() => ({
     borderColor: "var(--ui-border)",

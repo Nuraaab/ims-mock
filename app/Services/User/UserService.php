@@ -182,6 +182,32 @@ class UserService
                 ->exists();
 
             if (! $hasAccess) {
+                $hasAccess = UserRoleBinding::query()
+                    ->where('user_id', $actor->id)
+                    ->where(function ($query) use ($organizationId) {
+                        $query->where(function ($inner) use ($organizationId) {
+                            $inner->where('scope', 'branch')
+                                ->whereIn('scope_id', Branch::query()
+                                    ->where('organization_id', $organizationId)
+                                    ->select('id'));
+                        })->orWhere(function ($inner) use ($organizationId) {
+                            $inner->where('scope', 'warehouse')
+                                ->whereIn('scope_id', Warehouse::query()
+                                    ->where('organization_id', $organizationId)
+                                    ->select('id'));
+                        })->orWhere(function ($inner) use ($organizationId) {
+                            $inner->where('scope', 'outlet')
+                                ->whereIn('scope_id', Outlet::query()
+                                    ->whereHas('branch', function ($branchQuery) use ($organizationId) {
+                                        $branchQuery->where('organization_id', $organizationId);
+                                    })
+                                    ->select('id'));
+                        });
+                    })
+                    ->exists();
+            }
+
+            if (! $hasAccess) {
                 throw ValidationException::withMessages([
                     'organization_id' => ['You do not have access to the selected organization.'],
                 ]);
@@ -192,13 +218,50 @@ class UserService
 
         $resolved = (clone $organizationBindings)->value('scope_id');
 
-        if (! $resolved) {
-            throw ValidationException::withMessages([
-                'organization_id' => ['No organization scope found for the current user.'],
-            ]);
+        if ($resolved) {
+            return (int) $resolved;
         }
 
-        return (int) $resolved;
+        $branchOrganizationId = UserRoleBinding::query()
+            ->where('user_id', $actor->id)
+            ->where('scope', 'branch')
+            ->whereNotNull('scope_id')
+            ->whereIn('scope_id', Branch::query()->select('id'))
+            ->join('branches', 'branches.id', '=', 'user_role_bindings.scope_id')
+            ->value('branches.organization_id');
+
+        if ($branchOrganizationId) {
+            return (int) $branchOrganizationId;
+        }
+
+        $warehouseOrganizationId = UserRoleBinding::query()
+            ->where('user_id', $actor->id)
+            ->where('scope', 'warehouse')
+            ->whereNotNull('scope_id')
+            ->whereIn('scope_id', Warehouse::query()->select('id'))
+            ->join('warehouses', 'warehouses.id', '=', 'user_role_bindings.scope_id')
+            ->value('warehouses.organization_id');
+
+        if ($warehouseOrganizationId) {
+            return (int) $warehouseOrganizationId;
+        }
+
+        $outletOrganizationId = UserRoleBinding::query()
+            ->where('user_id', $actor->id)
+            ->where('scope', 'outlet')
+            ->whereNotNull('scope_id')
+            ->whereIn('scope_id', Outlet::query()->select('id'))
+            ->join('outlets', 'outlets.id', '=', 'user_role_bindings.scope_id')
+            ->join('branches', 'branches.id', '=', 'outlets.branch_id')
+            ->value('branches.organization_id');
+
+        if ($outletOrganizationId) {
+            return (int) $outletOrganizationId;
+        }
+
+        throw ValidationException::withMessages([
+            'organization_id' => ['No accessible organization scope found for the current user.'],
+        ]);
     }
 
     private function assertScopeBelongsToOrganization(string $scope, ?int $scopeId, int $organizationId): void
