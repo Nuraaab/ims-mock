@@ -10,7 +10,14 @@
             <div class="ui-card relative z-10 w-full max-w-lg p-5 md:p-6">
                 <div class="mb-4 flex items-center justify-between">
                     <h3 class="ui-text text-lg font-semibold">{{ title }}</h3>
-                    <button type="button" class="ui-muted text-sm" @click="$emit('close')">Close</button>
+                    <button
+                        type="button"
+                        class="ui-muted rounded-md p-1.5 text-lg leading-none transition hover:bg-slate-100 dark:hover:bg-slate-800"
+                        aria-label="Close modal"
+                        @click="$emit('close')"
+                    >
+                        &times;
+                    </button>
                 </div>
                 <slot />
             </div>
