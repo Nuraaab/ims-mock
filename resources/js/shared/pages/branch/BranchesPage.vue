@@ -36,7 +36,6 @@
             </table>
         </section>
 
-        <p v-if="message" class="ui-alert-success">{{ message }}</p>
         <p v-if="error" class="ui-alert-error">{{ error }}</p>
         <ul v-if="errorItems.length" class="mt-2 list-disc pl-5 text-sm text-red-700 dark:text-red-300">
             <li v-for="(item, index) in errorItems" :key="index">{{ item }}</li>
@@ -76,8 +75,10 @@ import AppButton from "@/shared/components/ui/AppButton.vue";
 import AppModal from "@/shared/components/ui/AppModal.vue";
 import TableActions from "@/shared/components/ui/TableActions.vue";
 import { useBranches } from "@/shared/composables/useBranches";
+import { useNotifier } from "@/shared/composables/useNotifier";
 
-const { items, loading, saving, message, error, validationErrors, fetchBranches, createBranch, updateBranch, deleteBranch } = useBranches();
+const { items, loading, saving, error, validationErrors, fetchBranches, createBranch, updateBranch, deleteBranch } = useBranches();
+const { notifySuccess, notifyError, getErrorMessage, confirmDelete } = useNotifier();
 
 const modalOpen = ref(false);
 const editingId = ref(null);
@@ -124,16 +125,31 @@ async function submit() {
         phone: form.phone || null,
     };
 
-    if (editingId.value) {
-        await updateBranch(editingId.value, payload);
-    } else {
-        await createBranch(payload);
+    try {
+        const data = editingId.value
+            ? await updateBranch(editingId.value, payload)
+            : await createBranch(payload);
+        notifySuccess(data?.message || (editingId.value ? "Branch updated successfully." : "Branch created successfully."));
+    } catch (apiError) {
+        notifyError(getErrorMessage(apiError, "Failed to save branch."));
+        return;
     }
 
     closeModal();
 }
 
 async function removeItem(id) {
-    await deleteBranch(id);
+    const confirmed = await confirmDelete({
+        title: "Delete branch?",
+        text: "This will permanently remove this branch.",
+    });
+    if (!confirmed) return;
+
+    try {
+        const data = await deleteBranch(id);
+        notifySuccess(data?.message || "Branch deleted successfully.");
+    } catch (apiError) {
+        notifyError(getErrorMessage(apiError, "Failed to delete branch."));
+    }
 }
 </script>
