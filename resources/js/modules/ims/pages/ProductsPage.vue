@@ -27,9 +27,17 @@
                         <td class="px-4 py-3">{{ item.barcode || "-" }}</td>
                         <td class="px-4 py-3">{{ item.product_group?.name || "-" }}</td>
                         <td class="px-4 py-3">
-                            <span class="ui-muted text-xs">
-                                S: {{ item.track_stock ? "Y" : "N" }} | B: {{ item.track_batch ? "Y" : "N" }} | E: {{ item.track_expiry ? "Y" : "N" }}
-                            </span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <span class="rounded-full px-2 py-0.5 text-xs font-medium" :class="item.track_stock ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'">
+                                    Stock: {{ item.track_stock ? "On" : "Off" }}
+                                </span>
+                                <span class="rounded-full px-2 py-0.5 text-xs font-medium" :class="item.track_batch ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'">
+                                    Batch: {{ item.track_batch ? "On" : "Off" }}
+                                </span>
+                                <span class="rounded-full px-2 py-0.5 text-xs font-medium" :class="item.track_expiry ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'">
+                                    Expiry: {{ item.track_expiry ? "On" : "Off" }}
+                                </span>
+                            </div>
                         </td>
                         <td class="px-4 py-3">
                             <TableActions @edit="openEdit(item)" @delete="removeItem(item.id)" />
