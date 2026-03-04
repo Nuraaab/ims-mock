@@ -3,26 +3,30 @@
 namespace App\Services\Branch;
 
 use App\Models\User;
-use App\Models\UserRoleBinding;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Validation\ValidationException;
 use Modules\IMS\Models\Branch;
 
 class BranchService
 {
     public function index(User $actor, ?int $organizationId = null, int $perPage = 15): LengthAwarePaginator
     {
-        $resolvedOrganizationId = $this->resolveOrganizationIdForActor($actor, $organizationId);
+        $query = Branch::query();
 
-        return Branch::query()
-            ->where('organization_id', $resolvedOrganizationId)
+        if ($organizationId !== null) {
+            $query->where('organization_id', $organizationId);
+        }
+
+        $accessibleBranchIds = require_scope_ids($actor, 'branches.view', 'branch');
+
+        return $query
+            ->whereIn('id', $accessibleBranchIds)
             ->orderByDesc('id')
             ->paginate($perPage);
     }
 
     public function store(User $actor, array $payload): Branch
     {
-        $organizationId = $this->resolveOrganizationIdForActor($actor, $payload['organization_id'] ?? null);
+        $organizationId = required_payload_int($payload, 'organization_id', 'organization_id is required to create a branch.');
 
         return Branch::create([
             'organization_id' => $organizationId,
@@ -39,16 +43,12 @@ class BranchService
 
     public function show(User $actor, int $branchId): Branch
     {
-        $branch = Branch::query()->findOrFail($branchId);
-        $this->assertActorCanAccessOrganization($actor, (int) $branch->organization_id);
-
-        return $branch;
+        return Branch::query()->findOrFail($branchId);
     }
 
     public function update(User $actor, int $branchId, array $payload): Branch
     {
         $branch = Branch::query()->findOrFail($branchId);
-        $this->assertActorCanAccessOrganization($actor, (int) $branch->organization_id);
 
         if (array_key_exists('name', $payload)) {
             $branch->name = $payload['name'];
@@ -83,54 +83,6 @@ class BranchService
     public function destroy(User $actor, int $branchId): void
     {
         $branch = Branch::query()->findOrFail($branchId);
-        $this->assertActorCanAccessOrganization($actor, (int) $branch->organization_id);
         $branch->delete();
-    }
-
-    private function resolveOrganizationIdForActor(User $actor, ?int $organizationId = null): int
-    {
-        $organizationBindings = UserRoleBinding::query()
-            ->where('user_id', $actor->id)
-            ->where('scope', 'organization')
-            ->whereNotNull('scope_id');
-
-        if ($organizationId !== null) {
-            $hasAccess = (clone $organizationBindings)
-                ->where('scope_id', $organizationId)
-                ->exists();
-
-            if (! $hasAccess) {
-                throw ValidationException::withMessages([
-                    'organization_id' => ['You do not have access to the selected organization.'],
-                ]);
-            }
-
-            return $organizationId;
-        }
-
-        $resolved = (clone $organizationBindings)->value('scope_id');
-
-        if (! $resolved) {
-            throw ValidationException::withMessages([
-                'organization_id' => ['No organization scope found for the current user.'],
-            ]);
-        }
-
-        return (int) $resolved;
-    }
-
-    private function assertActorCanAccessOrganization(User $actor, int $organizationId): void
-    {
-        $hasAccess = UserRoleBinding::query()
-            ->where('user_id', $actor->id)
-            ->where('scope', 'organization')
-            ->where('scope_id', $organizationId)
-            ->exists();
-
-        if (! $hasAccess) {
-            throw ValidationException::withMessages([
-                'organization_id' => ['You do not have access to this organization resource.'],
-            ]);
-        }
     }
 }
