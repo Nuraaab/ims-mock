@@ -27,6 +27,9 @@ const imsRoutes = [
         path: "/dashboard/ims/items",
         name: "ims.items.index",
         component: ItemsPage,
+        meta: { requiresAuth: true },
+    },
+    {
         path: "/dashboard/ims/products",
         name: "ims.products.index",
         component: ProductsPage,
